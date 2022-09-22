@@ -1,0 +1,6 @@
+
+Input Layer with 784 input nodes for every pixel
+Hidden Layer with 16 nodes
+Output Layer with 10 nodes (numbers 0-9)
+
+-tanh activation function (better than sigmoid)
