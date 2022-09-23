@@ -4,3 +4,40 @@ Hidden Layer with 16 nodes
 Output Layer with 10 nodes (numbers 0-9)
 
 -tanh activation function (better than sigmoid)
+
+Matrix Math:
+
+        w1          input          h1
+    (16 x 784) * (784 x 1) ==> (16 x 1)
+    (16 x 1).T.flatten() ==> (1 x 16)
+                    w2          o1
+    (1 x 16) * (16 x 10) ==> (1 x 10)
+
+
+Learning:
+>>> import numpy as np
+>>> A = np.array([0,1,2,3,4])
+>>> A.T
+array([0, 1, 2, 3, 4])
+>>> A - 3
+array([-3, -2, -1,  0,  1])
+>>> A * 2
+array([0, 2, 4, 6, 8])
+>>> A + 2
+array([2, 3, 4, 5, 6])
+>>> A = np.array([0,1,2,3,4])
+>>> A = A / 2
+>>> A
+array([0. , 0.5, 1. , 1.5, 2. ])
+>>> A = A * 2
+>>> A
+array([0., 1., 2., 3., 4.])
+>>> B = np.array([0,1,2,3,4])
+>>> A * B
+array([ 0.,  1.,  4.,  9., 16.])
+>>> A
+array([0., 1., 2., 3., 4.])
+>>> B
+array([0, 1, 2, 3, 4])
+>>> A.dot(B)
+30.0
