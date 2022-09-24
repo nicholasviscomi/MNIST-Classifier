@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 
 # Structure of data:
 # first column is the label of what the number actually is
@@ -8,7 +7,7 @@ import matplotlib.pyplot as plt
 # Thus, one row is one image
 data = pd.read_csv('data/train.csv')
 data = np.array(data)
-m, n = data.shape
+m, n = data.shape # rows, cols
 np.random.shuffle(data) # shuffle before splitting into dev and training sets
 
 data_dev = data[0:1000].T
@@ -54,19 +53,30 @@ def feed_forward(inputs, W1, B1, W2, B2):
     return Z1, A1, Z2, A2
 
 def one_hot(Y):
+    # make an array that has 10 numbers. Everything is 0, 
+    # except for the position of the correct label, which is one
+
+    # When doing backpropagation, we want to turn off the bright neurons
+    # that were wrong and keep on the correct ones. Thus, when calculating what
+    # needs to change the most, the correct neuron needs to change by 0 and all
+    # the others need to change by their value so that they become 0. This means
+    # that the correct position of the correct label needs to be 1 so it doesn't
+    # change, and all the other ones do.
     one_hot_Y = np.zeros((Y.size, Y.max() + 1))
     one_hot_Y[np.arange(Y.size), Y] = 1
-    one_hot_Y = one_hot_Y.T
-    return one_hot_Y
+    return one_hot_Y.T
 
 def backward_prop(Z1, A1, Z2, A2, W1, W2, X, Y):
-    one_hot_Y = one_hot(Y)
-    dZ2 = A2 - one_hot_Y
-    dW2 = 1 / m * dZ2.dot(A1.T)
-    db2 = 1 / m * np.sum(dZ2)
+    # y = correct label of the image
+
+    # see how much the output layer, A2 needs to change compared to correct answer
+    dZ2 = A2 - one_hot(Y)
+    dW2 = dZ2.dot(A1.T) / m
+    db2 = np.sum(dZ2) / m
+
     dZ1 = W2.T.dot(dZ2) * deriv_tanh(Z1)
-    dW1 = 1 / m * dZ1.dot(X.T)
-    db1 = 1 / m * np.sum(dZ1)
+    dW1 = dZ1.dot(X.T) / m
+    db1 = np.sum(dZ1) / m
     return dW1, db1, dW2, db2
 
 def update_params(W1, b1, W2, b2, dW1, db1, dW2, db2, alpha):
@@ -82,13 +92,13 @@ def get_predictions(A2):
 def get_accuracy(predictions, Y):
     return np.sum(predictions == Y) / Y.size
 
-def gradient_descent(X, Y, alpha, iterations):
+def gradient_descent(X, Y, learning_rate, iterations):
     W1, b1, W2, b2 = init_weights_biases()
 
     for i in range(iterations):
         Z1, A1, Z2, A2 = feed_forward(X, W1, b1, W2, b2)
         dW1, db1, dW2, db2 = backward_prop(Z1, A1, Z2, A2, W1, W2, X, Y)
-        W1, b1, W2, b2 = update_params(W1, b1, W2, b2, dW1, db1, dW2, db2, alpha)
+        W1, b1, W2, b2 = update_params(W1, b1, W2, b2, dW1, db1, dW2, db2, learning_rate)
         if i % 10 == 0:
             print("Iteration: ", i)
             predictions = get_predictions(A2)
@@ -123,8 +133,9 @@ def test_prediction(index, W1, b1, W2, b2):
     print_image_and_label(current_image, label, prediction)
 
 if __name__ == '__main__':
-    W1, B1, W2, B2 = gradient_descent(X_train, Y_train, 0.10, 500)
+    W1, B1, W2, B2 = gradient_descent(X_train, Y_train, 0.4, 600)
 
     dev_predictions = make_predictions(X_dev, W1, B1, W2, B2)
     print(f"Test Accuracy: {get_accuracy(dev_predictions, Y_dev)}")
     
+    # add some graphs of the accuracy per iteration. That would be so cool
