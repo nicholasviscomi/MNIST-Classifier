@@ -1,19 +1,111 @@
-from typing import List
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 
 # Structure of data:
 # first column is the label of what the number actually is
 # All the other columns are the values for each pixel, either 0 or 1
 # Thus, one row is one image
+data = pd.read_csv('data/train.csv')
+data = np.array(data)
+m, n = data.shape
+np.random.shuffle(data) # shuffle before splitting into dev and training sets
 
-def print_image_and_label(row):
-    label = row[0]
+data_dev = data[0:1000].T
+Y_dev = data_dev[0]
+X_dev = data_dev[1:n]
+X_dev = X_dev / 255.
+
+data_train = data[1000:m].T
+Y_train = data_train[0] # labels for all of the images
+X_train = data_train[1:n]
+X_train = X_train / 255.
+_,m_train = X_train.shape
+
+# 748 inputs, 16 hidden, 10 output
+W1 = [] # first weights = 748 * 16
+B1 = [] # first biases = 16 for hidden nodes
+
+W2 = [] # 16 * 10
+B2 = [] # second biases = 10 for output nodes
+
+def init_weights_biases():
+    W1 = np.random.rand(16, 784) - 0.5 # 16 arrays with 748 random numbers from -0.5 to 0.5
+    B1 = np.random.rand(16, 1) - 0.5
+    W2 = np.random.rand(10, 16) - 0.5
+    B2 = np.random.rand(10, 1) - 0.5
+    return W1, B1, W2, B2
+
+def tanh(x):
+    return np.tanh(x)
+
+def deriv_tanh(x):
+    return 1 / (np.cosh(x) ** 2)
+
+def softmax(Z):
+    A = np.exp(Z) / sum(np.exp(Z))
+    return A
+
+def feed_forward(inputs, W1, B1, W2, B2):
+    Z1 = W1.dot(inputs) + B1 # (16 x 784) * (784 x 1) = 16 x 1
+    A1 = tanh(Z1) 
+    Z2 = W2.dot(A1) + B2 # (10 x 16) * (16 x 1) = 10 x 1
+    A2 = softmax(Z2)
+    return Z1, A1, Z2, A2
+
+def one_hot(Y):
+    one_hot_Y = np.zeros((Y.size, Y.max() + 1))
+    one_hot_Y[np.arange(Y.size), Y] = 1
+    one_hot_Y = one_hot_Y.T
+    return one_hot_Y
+
+def backward_prop(Z1, A1, Z2, A2, W1, W2, X, Y):
+    one_hot_Y = one_hot(Y)
+    dZ2 = A2 - one_hot_Y
+    dW2 = 1 / m * dZ2.dot(A1.T)
+    db2 = 1 / m * np.sum(dZ2)
+    dZ1 = W2.T.dot(dZ2) * deriv_tanh(Z1)
+    dW1 = 1 / m * dZ1.dot(X.T)
+    db1 = 1 / m * np.sum(dZ1)
+    return dW1, db1, dW2, db2
+
+def update_params(W1, b1, W2, b2, dW1, db1, dW2, db2, alpha):
+    W1 = W1 - alpha * dW1
+    b1 = b1 - alpha * db1    
+    W2 = W2 - alpha * dW2  
+    b2 = b2 - alpha * db2    
+    return W1, b1, W2, b2
+
+def get_predictions(A2):
+    return np.argmax(A2, 0)
+
+def get_accuracy(predictions, Y):
+    return np.sum(predictions == Y) / Y.size
+
+def gradient_descent(X, Y, alpha, iterations):
+    W1, b1, W2, b2 = init_weights_biases()
+
+    for i in range(iterations):
+        Z1, A1, Z2, A2 = feed_forward(X, W1, b1, W2, b2)
+        dW1, db1, dW2, db2 = backward_prop(Z1, A1, Z2, A2, W1, W2, X, Y)
+        W1, b1, W2, b2 = update_params(W1, b1, W2, b2, dW1, db1, dW2, db2, alpha)
+        if i % 10 == 0:
+            print("Iteration: ", i)
+            predictions = get_predictions(A2)
+            print(get_accuracy(predictions, Y))
+    return W1, b1, W2, b2
+
+def make_predictions(inputs, W1, B1, W2, B2):
+    _, _, _, A2 = feed_forward(inputs, W1, B1, W2, B2)
+    predictions = get_predictions(A2)
+    return predictions
+
+def print_image_and_label(image, label, prediction):
     print(f"Label: {label}")
+    print(f"Prediction: {prediction}")
     
-    img = row[1:]
     count = 0
-    for pixel in img:
+    for pixel in image.T.flatten():
         if pixel != 0:
             print("⬜️", end='')
         else:
@@ -24,59 +116,15 @@ def print_image_and_label(row):
         if count % 28 == 0:
             print("\n", end='') # add a new line
 
-# 748 inputs, 16 hidden, 10 output
-w1 = [] # first weights = 748 * 16
-b1 = [] # first biases = 16 for hidden nodes
-
-w2 = [] # 16 * 10
-b2 = [] # second biases = 10 for output nodes
-
-def init_weights_biases():
-    w1 = np.random.rand(16, 784) - 0.5 # 16 arrays with 748 random numbers from -0.5 to 0.5
-    b1 = np.random.rand(16, 1) - 0.5
-    w2 = np.random.rand(16, 10) - 0.5
-    b2 = np.random.rand(1, 10) - 0.5
-    return w1, b1, w2, b2
-
-def tanh(x):
-    return np.tanh(x)
-
-def deriv_tanh(x):
-    return 1 / (np.cosh(x) ** 2)
-
-def feed_forward(inputs, w1, b1, w2, b2) -> List:
-    # run the inputs through the network
-    h1 = tanh(w1.dot(inputs[:, 0, None]) + b1)
-    h1 = h1.T[0]
-    o1 = tanh(h1.dot(w2) + b2)
-    return o1
-
-# @param o1 = the returned output layer, a list of 10 floats
-# @param correct = the label of the image
-def cost(o1, correct):
-    total = 0
-    for i, v in enumerate(o1):
-        if i == correct:
-            total += (v - 1) ** 2
-        else:
-            total += v ** 2 
-    return total
+def test_prediction(index, W1, b1, W2, b2):
+    current_image = X_train[:, index, None]
+    prediction = make_predictions(X_train[:, index, None], W1, b1, W2, b2)
+    label = Y_train[index]
+    print_image_and_label(current_image, label, prediction)
 
 if __name__ == '__main__':
-    data = pd.read_csv("data/train.csv")
-    data = np.array(data)
+    W1, B1, W2, B2 = gradient_descent(X_train, Y_train, 0.10, 500)
 
-    for i in range(3):
-        img = data[i]
-        print_image_and_label(img)
-
-        inputs = np.array(img[1:]) # everything but the label
-        inputs = np.reshape(inputs, (784, 1)) 
-        inputs = inputs / 255 # put them on a scale of 1
-
-        w1, b1, w2, b2 = init_weights_biases()
-        res = feed_forward(inputs, w1, b1, w2, b2)
-        res = list(res[0])
-        print(f"Prediction: { res.index(max(res)) }")
-        print(f"Cost: {cost(res, img[0])}")
-        print("————————————————————————————————————————————————————————\n")
+    dev_predictions = make_predictions(X_dev, W1, B1, W2, B2)
+    print(f"Test Accuracy: {get_accuracy(dev_predictions, Y_dev)}")
+    
