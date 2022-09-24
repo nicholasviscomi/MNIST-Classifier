@@ -132,10 +132,18 @@ def test_prediction(index, W1, b1, W2, b2):
     label = Y_train[index]
     print_image_and_label(current_image, label, prediction)
 
+def download_model(W1, B1, W2, B2):
+    master = np.array([W1, B1, W2, B2], dtype=object)
+    np.save("models/16hidden/master.npy", master)
+    
+    return
+
 if __name__ == '__main__':
-    W1, B1, W2, B2 = gradient_descent(X_train, Y_train, 0.4, 600)
+    # W1, B1, W2, B2 = gradient_descent(X_train, Y_train, 0.4, 600)
+    W1, B1, W2, B2 = np.load('models/16hidden/master.npy', allow_pickle=True)
 
     dev_predictions = make_predictions(X_dev, W1, B1, W2, B2)
     print(f"Test Accuracy: {get_accuracy(dev_predictions, Y_dev)}")
     
+    # download_model(W1, B1, W2, B2)
     # add some graphs of the accuracy per iteration. That would be so cool
