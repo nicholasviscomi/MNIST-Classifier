@@ -94,20 +94,30 @@ def game_loop():
         fps_clock.tick(FPS)
 
 if __name__ == '__main__':   
-    # name = "16hidden"
+    name = "100hidden"
     # W1, B1, W2, B2 = np.load(f'models/{name}/master.npy', allow_pickle=True)
+    # W1, B1, W2, B2 = gradient_descent(X_train, Y_train, learning_rate=0.4, iterations=600, n_hidden=100)
     # dev_predictions = make_predictions(X_dev, W1, B1, W2, B2)
     # print(f"Test Accuracy: {get_accuracy(dev_predictions, Y_dev)}")
+    # download_model(W1, B1, W2, B2, name)
     # game_loop()
+
+    raw_data = np.load('data/mod_train.npy')
+    print(raw_data.shape)
+    raw_data = np.array(pd.read_csv('data/train.csv'))
     print(raw_data.shape)
 
-    for y, row in enumerate(data):
-        for x, val in enumerate(row):
-            if x == 0: continue
-            if val != 0:
-                data[y][x] = 1
 
-    pd.DataFrame(data).to_csv('data/mod_train.csv')
+    # for y, row in enumerate(data):
+    #     for x, val in enumerate(row):
+    #         if x == 0: continue
+    #         if val != 0:
+    #             data[y][x] = 1
+
+    # NEED TO MAKE LABELS FOR THE CSV BEFORE SAVING IT
+    # pd.DataFrame(data).to_csv('data/mod_train.csv')
+    # or you could save the modified data as a .npy file for easy access
+    # np.save(f"data/mod_train.npy", data)
     
     count = 0
     for pixel in data[0][1:]:
