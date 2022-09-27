@@ -1,3 +1,4 @@
+[x] save the model and use it on new stuff!
+[ ] Modify the training data to just be either 1s or 0s. The model is pretty bad otherwise
 [ ] graph the accuracy over each iteration
     [ ] add multiples lines showing how learning rate affects this
-[ ] save the model and use it on new stuff!
