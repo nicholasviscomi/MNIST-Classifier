@@ -4,21 +4,23 @@ import numpy as np
 # Structure of data:
 # first column is the label of what the number actually is
 # All the other columns are the values for each pixel, either 0 or 1
-# Thus, one row is one imagez
-raw_data = pd.read_csv('data/train.csv')
-data = np.array(raw_data)
+# Thus, one row is one image
+
+# raw_data = pd.read_csv('data/train.csv')
+# data = np.array(raw_data)
+data = np.load('data/mod_train.npy', allow_pickle=True)
 m, n = data.shape # rows, cols
 np.random.shuffle(data) # shuffle before splitting into dev and training sets
 
 data_dev = data[0:1000].T
 Y_dev = data_dev[0]
 X_dev = data_dev[1:n]
-X_dev = X_dev / 255.
+# X_dev = X_dev / 255.
 
 data_train = data[1000:m].T
 Y_train = data_train[0] # labels for all of the images
 X_train = data_train[1:n]
-X_train = X_train / 255.
+# X_train = X_train / 255.
 _,m_train = X_train.shape
 
 # 748 inputs, 16 hidden, 10 output
