@@ -138,3 +138,8 @@ def download_model(W1, B1, W2, B2, name):
     master = np.array([W1, B1, W2, B2], dtype=object)
     np.save(f"models/{name}/master.npy", master)
     return
+
+def reverse_engineer_image(W1, B1, W2, B2, num):
+    one_hot = np.zeros((10, 1))
+    one_hot[num] = 1    
+    return

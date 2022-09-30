@@ -25,25 +25,25 @@ cells = np.zeros((28, 28))
 def fill_nearby(mouse_x, mouse_y):
     y = int((mouse_y)/SCALE)
     x = int(mouse_x/SCALE)
+    
+    if x < 4 or x > 22: return
+    if y < 4 or y > 22: return
+    
     cells[y][x] = 1
 
-    if x <= 1 or x >= 27:
-        return
-    if y <= 1 or y >= 27:
+    if x >= 27 or y >= 27:
         return
 
     cells[int((mouse_y)/SCALE) + 1][int(mouse_x/SCALE)] = 1
-    cells[int((mouse_y)/SCALE) - 1][int(mouse_x/SCALE)] = 1
-
+    cells[int((mouse_y)/SCALE)+ 1][int(mouse_x/SCALE) + 1] = 1
     cells[int((mouse_y)/SCALE)][int(mouse_x/SCALE) + 1] = 1
-    cells[int((mouse_y)/SCALE)][int(mouse_x/SCALE) - 1] = 1
 
 def game_loop():
     print("start game loop!")
     dragging = False
     prediction = -1
 
-    name = "100hidden"
+    name = "mod_100hidden"
     W1, B1, W2, B2 = np.load(f'models/{name}/master.npy', allow_pickle=True)
     while True:
         WINDOW.fill((255,0,0))
@@ -51,11 +51,13 @@ def game_loop():
         for y, row in enumerate(cells):
             for x, val in enumerate(row):
                 col = BLACK
+                if (x < 4 or x > 23) or (y < 4 or y > 23):
+                    col = (220, 220, 220) 
                 if val == 1: 
                     col = WHITE
-                pygame.draw.rect(WINDOW, col, (x * SCALE, y * SCALE, SCALE, SCALE))      
+                pygame.draw.rect(WINDOW, col, (x * SCALE, y * SCALE, SCALE, SCALE), width=0)      
 
-        prediction_label = font.render(f" Prediction: {prediction} ", True, BLACK, (WHITE)) 
+        prediction_label = font.render(f" Prediction: { prediction } ", True, BLACK, (WHITE)) 
         lbl_rect = prediction_label.get_rect()
         lbl_rect.center = (28 * SCALE / 2, 30)
         WINDOW.blit(prediction_label, lbl_rect)
@@ -102,11 +104,46 @@ def game_loop():
         pygame.display.update()
         fps_clock.tick(FPS)
 
+def image_of_weights(W):
+    shape = W.shape
+    i = 0
+    img = W1[0].reshape((28, 28))
+    while True:
+        for y, row in enumerate(img):
+            for x, pixel in enumerate(row):
+                col = BLACK
+                if pixel < 0:
+                    col = (abs(pixel) * 255, 0, 0)
+                elif pixel > 0:
+                    col = (0, abs(pixel) * 255, 0)
+                pygame.draw.rect(WINDOW, col, (y * SCALE, x * SCALE, SCALE, SCALE), width=0)
+
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RIGHT:
+                    if ((i + 1) <= (shape[0] - 1)): i += 1
+                    else: i = 0
+                    img = W1[i].reshape((28, 28))
+                elif event.key == pygame.K_LEFT:
+                    if ((i - 1) >= (0)): i -= 1
+                    else: i = 15
+                    img = W1[i].reshape((28, 28))
+                    # move to the next image of weights 
+        pygame.display.update()
+        fps_clock.tick(FPS)
+        
+
 if __name__ == '__main__':   
-    name = "mod_100hidden"
+    name = "16hidden"
     W1, B1, W2, B2 = np.load(f'models/{name}/master.npy', allow_pickle=True)
-    # W1, B1, W2, B2 = gradient_descent(X_train, Y_train, learning_rate=0.4, iterations=600, n_hidden=100)
     dev_predictions = make_predictions(X_dev, W1, B1, W2, B2)
     print(f"Test Accuracy: {get_accuracy(dev_predictions, Y_dev)}")
+    # W1, B1, W2, B2 = gradient_descent(X_train, Y_train, learning_rate=0.4, iterations=600, n_hidden=100)
+
+    image_of_weights(W1)
+
     # download_model(W1, B1, W2, B2, name)
-    game_loop()
+    # game_loop()

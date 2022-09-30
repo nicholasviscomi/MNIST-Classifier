@@ -2,3 +2,10 @@
 [ ] Modify the training data to just be either 1s or 0s. The model is pretty bad otherwise
 [ ] graph the accuracy over each iteration
     [ ] add multiples lines showing how learning rate affects this
+[ ] Start with a 100% activation of a certain number and then work backwards
+    to the inputs to see what the neural network views as a certain number
+    https://stackoverflow.com/questions/32000620/get-probable-input-based-on-a-given-output-in-a-neural-network
+[ ] Do some image processing to center the drawn number
+    Optimal solution: make the drawing box only 20 x 20 and have the 8 rows and columns be permanently black
+    Cool solution: actually do the image preocessing lol
+[ ] use the weights between layers to see what patterns the network is picking up on
