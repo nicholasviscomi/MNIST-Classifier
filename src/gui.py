@@ -1,3 +1,4 @@
+from math import sqrt
 from re import S
 from network import *
 import pygame
@@ -109,13 +110,14 @@ def image_of_weights(W):
     i = 0
     img = W1[0].reshape((28, 28))
     while True:
+        pygame.display.set_caption(f"Weight {i + 1}")
         for y, row in enumerate(img):
             for x, pixel in enumerate(row):
                 col = BLACK
                 if pixel < 0:
-                    col = (abs(pixel) * 255, 0, 0)
+                    col = (abs(pixel) * 255, 0, 0, abs(pixel) * 255)
                 elif pixel > 0:
-                    col = (0, abs(pixel) * 255, 0)
+                    col = (0, 0, abs(pixel) * 255, abs(pixel) * 255)
                 pygame.draw.rect(WINDOW, col, (y * SCALE, x * SCALE, SCALE, SCALE), width=0)
 
         for event in pygame.event.get():
@@ -126,18 +128,17 @@ def image_of_weights(W):
                 if event.key == pygame.K_RIGHT:
                     if ((i + 1) <= (shape[0] - 1)): i += 1
                     else: i = 0
-                    img = W1[i].reshape((28, 28))
                 elif event.key == pygame.K_LEFT:
                     if ((i - 1) >= (0)): i -= 1
                     else: i = 15
-                    img = W1[i].reshape((28, 28))
-                    # move to the next image of weights 
+                    # move to the next image of weights
+                img = W1[i].reshape((28, 28))
         pygame.display.update()
         fps_clock.tick(FPS)
         
 
 if __name__ == '__main__':   
-    name = "16hidden"
+    name = "100hidden"
     W1, B1, W2, B2 = np.load(f'models/{name}/master.npy', allow_pickle=True)
     dev_predictions = make_predictions(X_dev, W1, B1, W2, B2)
     print(f"Test Accuracy: {get_accuracy(dev_predictions, Y_dev)}")
