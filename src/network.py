@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import scipy.optimize
 
 # Structure of data:
 # first column is the label of what the number actually is
@@ -9,17 +10,17 @@ import numpy as np
 # raw_data = pd.read_csv('data/train.csv')
 # data = np.array(raw_data)
 data = np.load('data/mod_train.npy', allow_pickle=True)
-m, n = data.shape # rows, cols
+m, x3 = data.shape # rows, cols
 np.random.shuffle(data) # shuffle before splitting into dev and training sets
 
 data_dev = data[0:1000].T
 Y_dev = data_dev[0]
-X_dev = data_dev[1:n]
+X_dev = data_dev[1:x3]
 # X_dev = X_dev / 255.
 
 data_train = data[1000:m].T
 Y_train = data_train[0] # labels for all of the images
-X_train = data_train[1:n]
+X_train = data_train[1:x3]
 # X_train = X_train / 255.
 _,m_train = X_train.shape
 
@@ -139,7 +140,26 @@ def download_model(W1, B1, W2, B2, name):
     np.save(f"models/{name}/master.npy", master)
     return
 
-def reverse_engineer_image(W1, B1, W2, B2, num):
+def flatten_output(O):
+    flat = np.zeros(10)
+    for i, _ in enumerate(O):
+        flat[i] = O[i][0]
+    return flat
+
+
+name = "100hidden"
+W1, B1, W2, B2 = np.load(f'models/{name}/master.npy', allow_pickle=True)
+def loss(X):
+    target = 7
     one_hot = np.zeros((10, 1))
-    one_hot[num] = 1    
-    return
+    one_hot[target] = 1   
+    _,_,_,out = feed_forward(X, W1, B1, W2, B2)
+    out = flatten_output(out)
+    for i, _ in enumerate(out):
+        out[i] = (one_hot[i] - out[i]) ** 2
+
+    return out.sum()
+
+def reverse_engineer_image():
+    x0 = np.zeros(784)
+    return scipy.optimize.minimize(loss, x0)

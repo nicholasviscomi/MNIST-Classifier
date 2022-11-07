@@ -1,16 +1,15 @@
-from math import sqrt
-from re import S
 from network import *
 import pygame
 from pygame.locals import *
 import sys
+import matplotlib.pyplot as plt
 
 pygame.init()
+fps_clock = pygame.time.Clock()
 
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 FPS = 60
-fps_clock = pygame.time.Clock()
 
 SCALE = 20
 WIDTH = 28 * SCALE
@@ -53,7 +52,7 @@ def game_loop():
             for x, val in enumerate(row):
                 col = BLACK
                 if (x < 4 or x > 23) or (y < 4 or y > 23):
-                    col = (220, 220, 220) 
+                    col = (240, 240, 240) 
                 if val == 1: 
                     col = WHITE
                 pygame.draw.rect(WINDOW, col, (x * SCALE, y * SCALE, SCALE, SCALE), width=0)      
@@ -84,9 +83,7 @@ def game_loop():
                     for y, row in enumerate(cells):
                         for x, val in enumerate(row):
                             cells[y][x] = 0
-                    print("clear!")
                 if event.key == pygame.K_RETURN:
-                    print("predict!")
                     inputs = cells.flatten().reshape((784, 1))
 
                     count = 0
@@ -109,6 +106,7 @@ def image_of_weights(W):
     shape = W.shape
     i = 0
     img = W1[0].reshape((28, 28))
+    print(img)
     while True:
         pygame.display.set_caption(f"Weight {i + 1}")
         for y, row in enumerate(img):
@@ -135,16 +133,57 @@ def image_of_weights(W):
                 img = W1[i].reshape((28, 28))
         pygame.display.update()
         fps_clock.tick(FPS)
-        
 
-if __name__ == '__main__':   
+if __name__ == '__main__': 
+    np.set_printoptions(suppress=True)
+
     name = "100hidden"
     W1, B1, W2, B2 = np.load(f'models/{name}/master.npy', allow_pickle=True)
     dev_predictions = make_predictions(X_dev, W1, B1, W2, B2)
     print(f"Test Accuracy: {get_accuracy(dev_predictions, Y_dev)}")
+
     # W1, B1, W2, B2 = gradient_descent(X_train, Y_train, learning_rate=0.4, iterations=600, n_hidden=100)
-
-    image_of_weights(W1)
-
     # download_model(W1, B1, W2, B2, name)
-    # game_loop()
+
+    img = reverse_engineer_image().x # .x grabs the succesful array
+    # img = img.reshape((28, 28))
+    
+    fig = plt.figure()
+    ax1 = fig.add_subplot(111, projection='3d')
+
+    # define location of the plot
+    x3 = np.zeros((28, 28))
+    num = 0
+    for i in range(28):
+        for j in range(28):
+            x3[i][j] = num
+        num = num + 1
+
+    x3 = x3.flatten()
+
+    y3 = np.zeros((28, 28))
+    for i in range(28):
+        y3[i] = np.arange(28)
+    y3 = y3.flatten()
+    
+    z3 = np.zeros(784)
+    # depth/width/height of the bar graphs
+    dx = np.ones(784)
+    dy = np.ones(784)
+    dz = img
+    
+    ax1.bar3d(x3, y3, z3, dx, dy, dz)
+
+
+    ax1.set_xlabel('x axis')
+    ax1.set_ylabel('y axis')
+    ax1.set_zlabel('z axis')
+
+    plt.show()
+
+    # _,_,_,A2 = feed_forward(img, W1, B1, W2, B2)
+    # out = list(flatten_output(A2))
+    # prediction = out.index(max(out))
+    # print(f"Prediction: { prediction }") 
+
+    # image_of_weights(W1)
