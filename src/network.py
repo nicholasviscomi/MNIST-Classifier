@@ -1,4 +1,3 @@
-import pandas as pd
 import numpy as np
 import scipy.optimize
 
@@ -149,8 +148,7 @@ def flatten_output(O):
 
 name = "100hidden"
 W1, B1, W2, B2 = np.load(f'models/{name}/master.npy', allow_pickle=True)
-def loss(X):
-    target = 7
+def loss(X, target):
     one_hot = np.zeros((10, 1))
     one_hot[target] = 1   
     _,_,_,out = feed_forward(X, W1, B1, W2, B2)
@@ -160,6 +158,6 @@ def loss(X):
 
     return out.sum()
 
-def reverse_engineer_image():
+def reverse_engineer_image(target):
     x0 = np.zeros(784)
-    return scipy.optimize.minimize(loss, x0)
+    return scipy.optimize.minimize(loss, x0, args=target, bounds=scipy.optimize.Bounds(0, 1))
