@@ -1,14 +1,15 @@
 import numpy as np
 import scipy.optimize
+import pandas as pd
 
 # Structure of data:
 # first column is the label of what the number actually is
 # All the other columns are the values for each pixel, either 0 or 1
 # Thus, one row is one image
 
-# raw_data = pd.read_csv('data/train.csv')
-# data = np.array(raw_data)
-data = np.load('data/mod_train.npy', allow_pickle=True)
+raw_data = pd.read_csv('data/train.csv')
+data = np.array(raw_data)
+# data = np.load('data/mod_train.npy', allow_pickle=True)
 m, x3 = data.shape # rows, cols
 np.random.shuffle(data) # shuffle before splitting into dev and training sets
 
@@ -31,7 +32,7 @@ W2 = [] # 16 * 10
 B2 = [] # second biases = 10 for output nodes
 
 def init_weights_biases(n_hidden):
-    W1 = np.random.rand(n_hidden, 784) - 0.5 # 16 arrays with 748 random numbers from -0.5 to 0.5
+    W1 = np.random.rand(n_hidden, 784) - 0.5 # n_hidden arrays with 784 random numbers from -0.5 to 0.5
     B1 = np.random.rand(n_hidden, 1) - 0.5
     W2 = np.random.rand(10, n_hidden) - 0.5
     B2 = np.random.rand(10, 1) - 0.5
@@ -68,13 +69,12 @@ def one_hot(Y):
     one_hot_Y[np.arange(Y.size), Y] = 1
     return one_hot_Y.T
 
-def backward_prop(Z1, A1, Z2, A2, W1, W2, X, Y):
+def backward_propagation(Z1, A1, Z2, A2, W1, W2, X, Y):
     # y = correct label of the image
 
-    # see how much the output layer, A2 needs to change compared to correct answer
-    dZ2 = A2 - one_hot(Y)
+    dZ2 = A2 - one_hot(Y) # how wrong was the output layer compared to the ideal
     dW2 = dZ2.dot(A1.T) / m
-    db2 = np.sum(dZ2) / m
+    db2 = np.sum(dZ2) / m # average of the absolute error
 
     dZ1 = W2.T.dot(dZ2) * deriv_tanh(Z1)
     dW1 = dZ1.dot(X.T) / m
@@ -99,7 +99,7 @@ def gradient_descent(X, Y, learning_rate, iterations, n_hidden):
 
     for i in range(iterations):
         Z1, A1, Z2, A2 = feed_forward(X, W1, b1, W2, b2)
-        dW1, db1, dW2, db2 = backward_prop(Z1, A1, Z2, A2, W1, W2, X, Y)
+        dW1, db1, dW2, db2 = backward_propagation(Z1, A1, Z2, A2, W1, W2, X, Y)
         W1, b1, W2, b2 = update_params(W1, b1, W2, b2, dW1, db1, dW2, db2, learning_rate)
         if i % 10 == 0:
             print("Iteration: ", i)
@@ -160,4 +160,4 @@ def loss(X, target):
 
 def reverse_engineer_image(target):
     x0 = np.zeros(784)
-    return scipy.optimize.minimize(loss, x0, args=target, bounds=scipy.optimize.Bounds(0, 1))
+    return scipy.optimize.minimize(loss, x0, args=target) # don't need bounds, just normalize the values after

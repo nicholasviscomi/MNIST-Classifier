@@ -1,7 +1,5 @@
 [x] save the model and use it on new stuff!
-[ ] Modify the training data to just be either 1s or 0s. The model is pretty bad otherwise
-[ ] graph the accuracy over each iteration
-    [ ] add multiples lines showing how learning rate affects this
+[x] Modify the training data to just be either 1s or 0s. The model is pretty bad otherwise
 [x] Start with a 100% activation of a certain number and then work backwards
     to the inputs to see what the neural network views as a certain number
     https://stackoverflow.com/questions/32000620/get-probable-input-based-on-a-given-output-in-a-neural-network
@@ -13,3 +11,10 @@
 [x] add a subplot of a 3d bar graph of an example 7
 [x] change reverse reverse_engineer_image 
     function to not allow negative numbers
+[x] graph the accuracy over each iteration
+    [x] add multiples lines showing how learning rate affects this
+
+[x] DISPLAY ALL HIDDEN NUERONS AT ONCE AND WATCH THEM CHANGE OVER TRAINING
+    [ ] Save the weights over a training period to a file so you don't have
+        to go through the process of training over and over
+[ ] Make the code support any number of hidden layers with any number of neurons
