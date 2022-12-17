@@ -4,7 +4,7 @@ import pygame
 from pygame.locals import *
 import sys
 import matplotlib.pyplot as plt
-import time
+import os
 
 cells = np.zeros((28, 28))
 WHITE = (255, 255, 255)
@@ -206,23 +206,34 @@ def graph_gradient_descent(X, Y, learning_rate, iterations, n_hidden):
             # print(get_accuracy(predictions, Y))
     return x, y
 
-def visualize_weights_training(X, Y, learning_rate, iterations, n_hidden):
-    
+def download_WWT(X, Y, learning_rate, iterations, spacing, n_hidden):
     weights_while_training = []
     W1, b1, W2, b2 = init_weights_biases(n_hidden)
-    #################VISUALIZE WIGHTS#################
     for i in range(iterations):
         Z1, A1, Z2, A2 = feed_forward(X, W1, b1, W2, b2)
         dW1, db1, dW2, db2 = backward_propagation(Z1, A1, Z2, A2, W1, W2, X, Y)
         W1, b1, W2, b2 = update_params(W1, b1, W2, b2, dW1, db1, dW2, db2, learning_rate)
-        if i % 10 == 0:
+        if i % spacing == 0:
             print("Iteration: ", i)
             predictions = get_predictions(A2)
             print(get_accuracy(predictions, Y))    
             weights_while_training.append(W1)
-
-    SCALE = 6
-    WIDTH, HEIGHT = 28 * SCALE * 4, 28 * SCALE * 4 # 28 pixels per image, SCALE width, 4 images
+    
+    np.save(f"visualizations/WWT.npy", weights_while_training)
+    with open("visualizations/info.txt", 'x')as file:
+        file.write(
+f"""Learning Rate: {learning_rate}
+Iterations: {iterations}
+Spacing: {spacing}
+n_hidden: {n_hidden}
+""" 
+        )
+    
+    return weights_while_training
+    
+def visualize_weights_training(weights_while_training, per_row, per_col, scale):
+    SCALE = scale
+    WIDTH, HEIGHT = 28 * SCALE * per_row, 28 * SCALE * per_col # 28 pixels per image, SCALE width, 4 images
     WINDOW, fps_clock, _ = init_pygame(WIDTH, HEIGHT)
 
     n = 0
@@ -296,7 +307,10 @@ if __name__ == '__main__':
     # dev_predictions = make_predictions(X_dev, W1, B1, W2, B2)
     # print(f"Test Accuracy: {get_accuracy(dev_predictions, Y_dev)}")
 
-    visualize_weights_training(X_train, Y_train, learning_rate=1, iterations=600, n_hidden=16)
+    download_WWT(X_train, Y_train, learning_rate=0.8, iterations=500, spacing=25, n_hidden=16)
+
+    wwt = np.load("visualizations/WWT.npy", allow_pickle=True)
+    visualize_weights_training(wwt, per_row=4, per_col=4, scale=6)
 
     # W1, B1, W2, B2 = gradient_descent(X_train, Y_train, learning_rate=0.4, iterations=600, n_hidden=100)
     # download_model(W1, B1, W2, B2, name)
