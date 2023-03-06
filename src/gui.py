@@ -191,7 +191,7 @@ def display_reverse_eng_img():
     plt.show()
 
 def graph_gradient_descent(X, Y, learning_rate, iterations, n_hidden):
-    W1, b1, W2, b2 = init_weights_biases(n_hidden)
+    W1, b1, W2, b2 = init_network(n_hidden)
 
     x, y = [], []
     for i in range(iterations):
@@ -208,7 +208,7 @@ def graph_gradient_descent(X, Y, learning_rate, iterations, n_hidden):
 
 def download_WWT(X, Y, learning_rate, iterations, spacing, n_hidden):
     weights_while_training = []
-    W1, b1, W2, b2 = init_weights_biases(n_hidden)
+    W1, b1, W2, b2 = init_network(n_hidden)
     for i in range(iterations):
         Z1, A1, Z2, A2 = feed_forward(X, W1, b1, W2, b2)
         dW1, db1, dW2, db2 = backward_propagation(Z1, A1, Z2, A2, W1, W2, X, Y)
@@ -257,7 +257,7 @@ def visualize_weights_training(weights_while_training, per_row, per_col, scale):
                     )
             # vertical dividing line
             pygame.draw.rect(
-                WINDOW, (0, 150, 0),
+                WINDOW, (255, 0, 0),
                 (
                     top_left[0], 
                     top_left[1], 
@@ -268,7 +268,7 @@ def visualize_weights_training(weights_while_training, per_row, per_col, scale):
 
             # horizontal dividing line
             pygame.draw.rect(
-                WINDOW, (0, 150, 0),
+                WINDOW, (255, 0, 0),
                 (
                     top_left[0],
                     top_left[1], 
@@ -298,7 +298,6 @@ def visualize_weights_training(weights_while_training, per_row, per_col, scale):
         fps_clock.tick(FPS)
     
 
-
 if __name__ == '__main__': 
     np.set_printoptions(suppress=True)
 
@@ -307,12 +306,16 @@ if __name__ == '__main__':
     # dev_predictions = make_predictions(X_dev, W1, B1, W2, B2)
     # print(f"Test Accuracy: {get_accuracy(dev_predictions, Y_dev)}")
 
-    download_WWT(X_train, Y_train, learning_rate=0.8, iterations=500, spacing=25, n_hidden=16)
+    # download_WWT(X_train, Y_train, learning_rate=0.8, iterations=500, spacing=25, n_hidden=16)
 
-    wwt = np.load("visualizations/WWT.npy", allow_pickle=True)
-    visualize_weights_training(wwt, per_row=4, per_col=4, scale=6)
+    # wwt = np.load("visualizations/WWT.npy", allow_pickle=True)
+    # visualize_weights_training(wwt, per_row=4, per_col=4, scale=6)
 
-    # W1, B1, W2, B2 = gradient_descent(X_train, Y_train, learning_rate=0.4, iterations=600, n_hidden=100)
+    # weights, biases = init_network((3, 16, 10))
+    # sums, activations = feed_forward(np.array([10, 15, 8]).T, (weights, biases))
+    
+    weights, biases = init_network((784, 30, 15, 10))
+    weights, biases = gradient_descent(X=X_train, Y=Y_train, learning_rate=0.4, iterations=100, network=(weights, biases))
     # download_model(W1, B1, W2, B2, name)
 
     # _,_,_,A2 = feed_forward(img, W1, B1, W2, B2)

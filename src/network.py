@@ -6,11 +6,10 @@ import pandas as pd
 # first column is the label of what the number actually is
 # All the other columns are the values for each pixel, either 0 or 1
 # Thus, one row is one image
-
 raw_data = pd.read_csv('data/train.csv')
 data = np.array(raw_data)
 # data = np.load('data/mod_train.npy', allow_pickle=True)
-m, x3 = data.shape # rows, cols
+rows, x3 = data.shape # rows, cols
 np.random.shuffle(data) # shuffle before splitting into dev and training sets
 
 data_dev = data[0:1000].T
@@ -18,25 +17,11 @@ Y_dev = data_dev[0]
 X_dev = data_dev[1:x3]
 # X_dev = X_dev / 255.
 
-data_train = data[1000:m].T
+data_train = data[1000:rows].T
 Y_train = data_train[0] # labels for all of the images
 X_train = data_train[1:x3]
 # X_train = X_train / 255.
 _,m_train = X_train.shape
-
-# 748 inputs, 16 hidden, 10 output
-W1 = [] # first weights = 748 * 16
-B1 = [] # first biases = 16 for hidden nodes
-
-W2 = [] # 16 * 10
-B2 = [] # second biases = 10 for output nodes
-
-def init_weights_biases(n_hidden):
-    W1 = np.random.rand(n_hidden, 784) - 0.5 # n_hidden arrays with 784 random numbers from -0.5 to 0.5
-    B1 = np.random.rand(n_hidden, 1) - 0.5
-    W2 = np.random.rand(10, n_hidden) - 0.5
-    B2 = np.random.rand(10, 1) - 0.5
-    return W1, B1, W2, B2
 
 def tanh(x):
     return np.tanh(x)
@@ -48,12 +33,61 @@ def softmax(Z):
     A = np.exp(Z) / sum(np.exp(Z))
     return A
 
-def feed_forward(inputs, W1, B1, W2, B2):
-    Z1 = W1.dot(inputs) + B1 # (nh x 784) * (784 x 1) = 16 x 1
-    A1 = tanh(Z1) 
-    Z2 = W2.dot(A1) + B2 # (10 x nh) * (nh x 1) = 10 x 1
-    A2 = softmax(Z2)
-    return Z1, A1, Z2, A2
+# structure is a tuple with the number of nuerons per layer
+# (784, 16, 10)
+def init_network(structure):
+    all_weights = []
+    all_biases  = []
+    prev = -1
+    for n in structure:
+        if prev == -1: 
+            prev = n
+            continue
+
+        # if len(all_weights) == 0:
+        #     all_weights = np.random.rand(n, prev) - 0.5
+        # if len(all_biases) == 0:
+        #     all_weights = np.random.rand(n, 1) - 0.5
+
+        all_weights.append(np.random.rand(n, prev) - 0.5)
+        all_biases.append(np.random.rand(n, 1) - 0.5)
+        prev = n
+
+    return (all_weights, all_biases)
+
+
+# network is a tuple of all weights and biases
+# same data type as returned by init_network
+# returns tuple of the sums, activations (size will be 1 less than the number of layers)
+# inputs need to be shape (n, 1). Can be done by transposing the input
+# activations will have the inputs as the first element
+def feed_forward(inputs, network: tuple[list, list]):
+    sums = [inputs]
+    activations = [inputs]
+    weights, biases = network[0], network[1]
+    assert len(weights) == len(biases)
+
+    prev_layer = np.array(inputs)
+    for i in range(len(weights)):
+        W = np.array(weights[i])
+        B = np.array(biases[i])
+
+        A = []
+        # W = np.array(W).T # need to transpose to make the matrix dimensions work
+        # print(f"{W.shape} @ {prev_layer.shape} + {B.shape}")
+        Z = W @ prev_layer
+        for i, (z, b) in enumerate(zip(Z, B)):
+            Z[i] = z + b
+
+        sums.append(Z)
+        if i == len(weights) - 1:
+            A = softmax(Z)
+        else:
+            A = tanh(Z)
+        activations.append(A) 
+        prev_layer = A
+
+    return sums, activations
 
 def one_hot(Y):
     # make an array that has 10 numbers. Everything is 0, 
@@ -69,47 +103,73 @@ def one_hot(Y):
     one_hot_Y[np.arange(Y.size), Y] = 1
     return one_hot_Y.T
 
-def backward_propagation(Z1, A1, Z2, A2, W1, W2, X, Y):
+def backward_propagation(Y, sums, activations, weights, biases):
     # y = correct label of the image
 
-    dZ2 = A2 - one_hot(Y) # how wrong was the output layer compared to the ideal
-    dW2 = dZ2.dot(A1.T) / m
-    db2 = np.sum(dZ2) / m # average of the absolute error
+    # first one will be that of the final layer
+    sums = sums[::-1]
+    activations = activations[::-1] 
+    weights = weights[::-1]
+    biases = biases[::-1]
 
-    dZ1 = W2.T.dot(dZ2) * deriv_tanh(Z1)
-    dW1 = dZ1.dot(X.T) / m
-    db1 = np.sum(dZ1) / m
-    return dW1, db1, dW2, db2
+    dWeights = [] 
+    dBiases  = []
+    
+    dZ = activations[0] - one_hot(Y)
+    for i, W in enumerate(weights):
+        if not (i < len(activations) - 1): break
+        dW = (dZ @ activations[i + 1].T) / rows 
+        dWeights.append(dW)
 
-def update_params(W1, b1, W2, b2, dW1, db1, dW2, db2, alpha):
-    W1 = W1 - alpha * dW1
-    b1 = b1 - alpha * db1    
-    W2 = W2 - alpha * dW2  
-    b2 = b2 - alpha * db2    
-    return W1, b1, W2, b2
+        dB = np.sum(dZ) / rows
+        dBiases.append(dB)
 
-def get_predictions(A2):
-    return np.argmax(A2, 0)
+        dZ = (W.T @ dZ) * deriv_tanh(sums[i + 1])
+
+
+    # dZ2 = A2 - one_hot(Y) 
+    # dW2 = (dZ2 @ A1.T) / rows
+    # db2 = np.sum(dZ2) / rows 
+
+    # dZ1 = (W2.T @ dZ2) * deriv_tanh(Z1)
+    # dW1 = (dZ1 @ X.T) / rows
+    # db1 = np.sum(dZ1) / rows
+
+    # these are in reverse order. They need to be iterated through in reverse
+    return dWeights, dBiases
+
+def update_params(weights, biases, dWeights, dBiases, lr):
+    new_weights, new_biases = [], []
+    
+    for w, b, dw, db in zip(weights, biases, dWeights[::-1], dBiases[::-1]): # reverse dWeights & dBiases into correct order
+        new_weights.append(w - (lr * dw))
+        new_biases.append (b - (lr * db))
+
+    return new_weights, new_biases
+
+def gradient_descent(X, Y, learning_rate: float, iterations: int, network: tuple[list, list]):
+    weights, biases = network[0], network[1]
+
+    for i in range(iterations):
+        sums, activations = feed_forward(X, (weights, biases))
+        dWeights, dBiases = backward_propagation(Y, sums, activations, weights, biases)
+        weights, biases = update_params(weights, biases, dWeights, dBiases, learning_rate)
+        if i % 10 == 0:
+            print("Iteration: ", i)
+            predictions = get_predictions(activations[-1])
+            print(get_accuracy(predictions, Y))
+
+    return weights, biases
+
+def get_predictions(output):
+    return np.argmax(output, 0)
 
 def get_accuracy(predictions, Y):
     return np.sum(predictions == Y) / Y.size
 
-def gradient_descent(X, Y, learning_rate, iterations, n_hidden):
-    W1, b1, W2, b2 = init_weights_biases(n_hidden)
-
-    for i in range(iterations):
-        Z1, A1, Z2, A2 = feed_forward(X, W1, b1, W2, b2)
-        dW1, db1, dW2, db2 = backward_propagation(Z1, A1, Z2, A2, W1, W2, X, Y)
-        W1, b1, W2, b2 = update_params(W1, b1, W2, b2, dW1, db1, dW2, db2, learning_rate)
-        if i % 10 == 0:
-            print("Iteration: ", i)
-            predictions = get_predictions(A2)
-            print(get_accuracy(predictions, Y))
-    return W1, b1, W2, b2
-
-def make_predictions(inputs, W1, B1, W2, B2):
-    _, _, _, A2 = feed_forward(inputs, W1, B1, W2, B2)
-    predictions = get_predictions(A2)
+def make_predictions(inputs, weights, biases):
+    _, activations = feed_forward(inputs, (weights, biases))
+    predictions = get_predictions(activations[-1])
     return predictions
 
 def print_image_and_label(image, label, prediction):
@@ -146,18 +206,18 @@ def flatten_output(O):
     return flat
 
 
-name = "100hidden"
-W1, B1, W2, B2 = np.load(f'models/{name}/master.npy', allow_pickle=True)
-def loss(X, target):
-    one_hot = np.zeros((10, 1))
-    one_hot[target] = 1   
-    _,_,_,out = feed_forward(X, W1, B1, W2, B2)
-    out = flatten_output(out)
-    for i, _ in enumerate(out):
-        out[i] = (one_hot[i] - out[i]) ** 2
+# name = "100hidden"
+# W1, B1, W2, B2 = np.load(f'models/{name}/master.npy', allow_pickle=True)
+# def loss(X, target):
+#     one_hot = np.zeros((10, 1))
+#     one_hot[target] = 1   
+#     _,_,_,out = feed_forward(X, W1, B1, W2, B2)
+#     out = flatten_output(out)
+#     for i, _ in enumerate(out):
+#         out[i] = (one_hot[i] - out[i]) ** 2
 
-    return out.sum()
+#     return out.sum()
 
-def reverse_engineer_image(target):
+# def reverse_engineer_image(target):
     x0 = np.zeros(784)
     return scipy.optimize.minimize(loss, x0, args=target) # don't need bounds, just normalize the values after
