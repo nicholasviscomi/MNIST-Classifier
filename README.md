@@ -1,0 +1,2 @@
+# Multilayer Perceptron from Scratch
+For my IB mathematics final project I wrote a miniature library for multilayer perceptrons and training by backpropogation. This codebase was used in conjunction with the research paper I wrote, where I derive the mathematics behind the feed-forward prediction, backpropogation, etc. I include a unique visualization of the weights in the hidden layers developing structure throughout training
